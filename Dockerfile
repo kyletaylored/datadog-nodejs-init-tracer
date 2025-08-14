@@ -10,11 +10,22 @@ ARG DD_ENV="local"
 ARG DD_VERSION="0.1.0"
 ARG DD_SITE="datadoghq.com"
 
+# Git metadata passed at build
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
+
 ENV DD_SERVICE=$DD_SERVICE \
     DD_ENV=$DD_ENV \
     DD_VERSION=$DD_VERSION \
-    DD_SITE=$DD_SITE
+    DD_SITE=$DD_SITE \
+    DD_GIT_REPOSITORY_URL=$DD_GIT_REPOSITORY_URL \
+    DD_GIT_COMMIT_SHA=$DD_GIT_COMMIT_SHA
+
 # DD_CLIENT_TOKEN and DD_APPLICATION_ID will be set at runtime, e.g. via docker run -e DD_CLIENT_TOKEN=your_token
+
+# (Optional) Stamp OCI labels for easier discovery in registries
+LABEL org.opencontainers.image.source=$DD_GIT_REPOSITORY_URL \
+    org.opencontainers.image.revision=$DD_GIT_COMMIT_SHA
 
 # Install only production deps
 COPY package*.json ./

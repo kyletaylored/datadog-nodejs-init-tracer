@@ -60,9 +60,13 @@ jobs:
         shell: bash
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            echo "val=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+              tag="${GITHUB_REF_NAME}"
+              # remove a single leading v/V (e.g., v0.0.2 -> 0.0.2)
+              tag="${tag#v}"
+              tag="${tag#V}"
+              echo "val=${tag}" >> "$GITHUB_OUTPUT"
           else
-            echo "val=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+              echo "val=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build (and push if not PR)
@@ -81,3 +85,5 @@ jobs:
             DD_ENV=local
             DD_VERSION=${{ steps.version.outputs.val }}
             DD_SITE=datadoghq.com
+            DD_GIT_REPOSITORY_URL=${{ github.server_url }}/${{ github.repository }}
+            DD_GIT_COMMIT_SHA=${{ github.sha }}
