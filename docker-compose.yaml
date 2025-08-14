@@ -1,0 +1,39 @@
+services:
+  datadog-serverless-init:
+    image: datadog/serverless-init
+    container_name: datadog-serverless-init
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE}
+      - DD_LOGS_ENABLED=true
+      - DD_APM_ENABLED=true
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      args:
+        DD_APPLICATION_ID: ${DD_APPLICATION_ID}
+        DD_CLIENT_TOKEN: ${DD_CLIENT_TOKEN}
+        DD_SERVICE: ${DD_SERVICE}
+        DD_ENV: ${DD_ENV}
+        DD_VERSION: ${DD_VERSION}
+        DD_SITE: ${DD_SITE}
+    image: datadog-nodejs-init-tracer:local
+    container_name: datadog-nodejs-init-tracer
+    environment:
+      - PORT=3000
+      - DD_SERVICE=${DD_SERVICE}
+      - DD_ENV=${DD_ENV}
+      - DD_VERSION=${DD_VERSION}
+      - DD_SITE=${DD_SITE}
+      - DD_APPLICATION_ID=${DD_APPLICATION_ID}
+      - DD_CLIENT_TOKEN=${DD_CLIENT_TOKEN}
+    depends_on:
+      - datadog-serverless-init
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
