@@ -31,4 +31,8 @@ RUN addgroup -S app && adduser -S app -G app && chown -R app:app /app
 USER app
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+# CMD ["node", "server.js"]
+
+# Add the tracer with command line arguments
+# https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/nodejs/#option-2-add-the-tracer-with-command-line-arguments
+CMD ["node", "--require", "dd-trace/init", "server.js"]
