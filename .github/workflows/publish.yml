@@ -39,8 +39,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
-        id: meta
+      # Metadata for the primary image (Dockerfile)
+      - name: Docker metadata (default)
+        id: meta_default
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -52,8 +53,24 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.description=Datadog Node.js init tracer sample app
+            org.opencontainers.image.description=Datadog Node.js tracer sample app (default image)
             org.opencontainers.image.title=datadog-nodejs-init-tracer
+
+      # Metadata for the -init image (Dockerfile.init)
+      - name: Docker metadata (init)
+        id: meta_init
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-init
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.description=Datadog Node.js tracer sample app (init variant)
+            org.opencontainers.image.title=datadog-nodejs-init-tracer (init)
 
       - name: Determine DD_VERSION
         id: version
@@ -69,15 +86,36 @@ jobs:
               echo "val=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build (and push if not PR)
+      # Build & push default image (Dockerfile)
+      - name: Build default (and push if not PR)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_default.outputs.tags }}
+          labels: ${{ steps.meta_default.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            DD_SERVICE=datadog-nodejs-init-tracer
+            DD_ENV=local
+            DD_VERSION=${{ steps.version.outputs.val }}
+            DD_SITE=datadoghq.com
+            DD_GIT_REPOSITORY_URL=${{ github.server_url }}/${{ github.repository }}
+            DD_GIT_COMMIT_SHA=${{ github.sha }}
+
+      # Build & push init image (Dockerfile.init)
+      - name: Build init (and push if not PR)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.init
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta_init.outputs.tags }}
+          labels: ${{ steps.meta_init.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
